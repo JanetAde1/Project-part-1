@@ -1,0 +1,74 @@
+from flask import Flask
+from flask import request
+from flask import jsonify
+import sqlsetup 
+import sql
+import creds
+from sqlsetup import create_connection
+from sqlsetup import execute_query
+from sqlsetup import execute_read_query
+
+app = Flask(__name__)
+app.config["DEBUG"] = True
+
+# Database connection
+myCreds = creds
+conn = sqlsetup.create_connection(myCreds.conString, myCreds.userName, myCreds.password, myCreds.dbName)
+
+USERNAME = "admin"
+PASSWORD = "password"
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+
+    if data["username"] == USERNAME and data["password"] == PASSWORD:
+        return "Login succesful"
+    else:
+        return "Invalid Credentials"
+
+@app.route('/api/facility', methods=['POST'])
+def create_facility():
+    data = request.get_json()
+    sql.add_facility(conn, data['name'])
+    return 'Add request successful!'
+
+@app.route('/api/facility/all', methods=['GET'])
+def facilities_all():
+    facilities = sql.get_facilities(conn)
+    return jsonify(facilities)
+
+@app.route('/api/facility', methods=['PUT'])
+def update_facility():
+    data = request.get_json()
+    sql.update_facility(conn, data['id'], data['name'])
+    return 'Update request successful!'
+
+@app.route('/api/facility', methods=['DELETE'])
+def delete_facility():
+    data = request.get_json()
+    sql.delete_facility(conn, data['id'])
+    return 'Delete request successful!'
+
+@app.route('/api/classroom', methods=['POST'])
+def create_classroom():
+    data = request.get_json()
+    sql.add_classroom(conn, data['capacity'], data['name'], data['facility_id'])
+    return 'Add request successful!'
+
+@app.route('/api/classroom/all', methods=['GET'])
+def classrooms_all():
+    classrooms = sql.get_classrooms(conn)
+    return jsonify(classrooms)
+
+@app.route('/api/classroom', methods=['PUT'])
+def update_classroom():
+    data = request.get_json()
+    sql.update_classroom(conn, data['id'], data['capacity'], data['name'], data['facility_id'])
+    return 'Update request successful!'
+
+@app.route('/api/classroom', methods=['DELETE'])
+def delete_classroom():
+    data = request.get_json()
+    sql.delete_classroom(conn, data['id'])
+    return 'Delete request successful!'
