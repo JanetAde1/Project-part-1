@@ -1,0 +1,48 @@
+@app.route('/api/teacher', methods=['POST'])
+def create_teacher():
+    data = request.get_json()
+    sql.add_teacher(conn, data['firstname'], data['lastname'], data['classroom_id'])
+    return 'Add request successful!'
+
+@app.route('/api/teacher/all', methods=['GET'])
+def teachers_all():
+    teachers = sql.get_teachers(conn)
+    return jsonify(teachers)
+
+@app.route('/api/teacher', methods=['PUT'])
+def update_teacher(teacher_id):
+    data = request.get_json()
+    sql.update_teacher(conn, data['id'], data['firstname'], data['lastname'],data['classroom_id'])
+    return 'Update teacher request successful!'
+
+@app.route('/api/teacher', methods=['DELETE'])
+def delete_teacher():
+    data = request.get_json()
+    sql.delete_teacher(conn, data['id'])
+    return 'Delete teacher request successful!'
+
+@app.route('/api/child', methods=['POST'])
+def create_child():
+    data = request.get_json()
+    sql.add_child(conn, data['firstname'], data['lastname'], data['age'], data['classroom_id'])
+    return 'Add child request successful!'
+
+@app.route('/api/child/all', methods=['GET'])
+def children_all():
+    children = sql.get_children(conn)
+    return jsonify(children)
+
+@app.route('/api/child', methods=['PUT'])
+def update_child(child_id):
+    data = request.get_json()
+    sql.update_child(conn, data['id'], data['firstname'], data['lastname'], data['age'], data['classroom_id'])
+    return 'Update child request successful!'
+
+@app.route('/api/child', methods=['DELETE'])
+def delete_child():
+    data = request.get_json()
+    sql.delete_child(conn, data['id'])
+    return 'Delete child request successful!'
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000, debug=True)
