@@ -1,0 +1,143 @@
+import mysql.connector
+import creds
+from mysql.connector import Error
+from sqlsetup import create_connection
+from sqlsetup import execute_query
+from sqlsetup import execute_read_query
+
+myCreds = creds
+conn = create_connection(myCreds.conString, myCreds.userName, myCreds.password, myCreds.dbName)
+
+# Define SQL for creating tables
+create_facility_table = """
+CREATE TABLE IF NOT EXISTS facility (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);"""
+
+create_classroom_table = """
+CREATE TABLE IF NOT EXISTS classroom (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    capacity INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    facility_id INT,
+    FOREIGN KEY (facility_id) REFERENCES facility(id)
+);"""
+
+create_teacher_table= """
+CREATE TABLE IF NOT EXISTS teacher (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    firstname VARCHAR(255) NOT NULL,
+    lastname VARCHAR(255) NOT NULL,
+    room INT,
+    FOREIGN KEY (room) REFERENCES classroom(id)
+);"""
+
+create_child_table = """
+CREATE TABLE IF NOT EXISTS child (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    firstname VARCHAR(255) NOT NULL,
+    lastname VARCHAR(255) NOT NULL,
+    age INT NOT NULL,
+    room INT,
+    FOREIGN KEY (room) REFERENCES classroom(id) 
+);"""
+
+# Create tables
+execute_query(conn, create_facility_table)
+execute_query(conn, create_classroom_table)
+execute_query(conn, create_teacher_table)
+execute_query(conn, create_child_table)
+
+def add_facility(connection, name):
+    query = "INSERT INTO facility (name) VALUES ('%s')" % name
+    execute_query(connection, query)
+
+def get_facilities(connection):
+    query = "SELECT * FROM facility"
+    return execute_read_query(connection, query)
+
+def update_facility(connection, facility_id, name):
+    query = "UPDATE facility SET name = '%s' WHERE id = %s" % (name, facility_id)
+    execute_query(connection, query)
+
+def delete_facility(connection, facility_id):
+    query = "DELETE FROM facility WHERE id = %s" % facility_id
+    execute_query(connection, query)
+
+def add_classroom(connection, capacity, name, facility_id):
+    query = "INSERT INTO classroom (capacity, name, facility_id) VALUES (%s, '%s', %s)" % (capacity, name, facility_id)
+    execute_query(connection, query)
+
+def get_classrooms(connection):
+    query = "SELECT * FROM classroom"
+    return execute_read_query(connection, query)
+
+def update_classroom(connection, classroom_id, capacity, name, facility_id):
+    query = "UPDATE classroom SET capacity = %s, name = '%s', facility_id = %s WHERE id = %s" % (capacity, name, facility_id, classroom_id)
+    execute_query(connection, query)
+
+def delete_classroom(connection, classroom_id):
+    query = "DELETE FROM classroom WHERE id = %s" % classroom_id
+    execute_query(connection, query)
+
+def add_teacher(connection, firstname, lastname, classroom_id):
+    query = """
+    INSERT INTO teacher (firstname, lastname, room) 
+    VALUES ('%s', '%s', %s)
+    """ % (firstname, lastname, classroom_id)
+    execute_query(connection, query)
+
+def update_teacher(connection, teacher_id, firstname, lastname, classroom_id):
+    query = " UPDATE teacher SET firstname = %s, lastname = %s, room = %s WHERE id = %s" % (firstname, lastname, classroom_id, teacher_id)
+    execute_query(connection, query)
+
+def delete_teacher(connection, teacher_id):
+    query = "DELETE FROM teacher WHERE id = %s" % (teacher_id,)
+    execute_query(connection, query)
+
+def get_teachers(connection):
+    query = "SELECT * FROM teacher"
+    return execute_read_query(connection, query)
+
+def add_child(connection, firstname, lastname, age, classroom_id):
+    # First, check how many teachers and children are in this classroom
+    teacher_count_query = "SELECT COUNT(*) FROM teacher WHERE room = %s" % (classroom_id,)
+    child_count_query = "SELECT COUNT(*) FROM child WHERE child.room = %s" % (classroom_id,)
+    child_capacity_query = "SELECT capacity FROM classroom WHERE id = %s" % (classroom_id,)
+
+    teachers_info = execute_read_query(connection, teacher_count_query)
+    children_count_info = execute_read_query(connection, child_count_query)
+    children_capacity_info = execute_read_query(connection, child_capacity_query)
+
+    teacher_count = teachers_info[0]['COUNT(*)']
+    child_count = children_count_info[0]['COUNT(*)'] 
+    child_capacity = children_capacity_info[0]['capacity']  
+    
+    print(teacher_count)
+    print(child_count)
+    print(child_capacity)
+
+    if child_count >= teacher_count * 10 or child_count >= child_capacity:
+        print("Cannot add more children to this classroom due to capacity/teacher constraints.")
+        return
+
+    insert_query = "INSERT INTO child (firstname, lastname, age, room) VALUES ('%s', '%s', %s, %s)" % (firstname, lastname, age, classroom_id)
+    execute_query(connection, insert_query)
+
+def delete_child(connection, child_id):
+    query = "DELETE FROM child WHERE id = %s" % (child_id)
+    execute_query(connection, query)
+
+def update_child(connection, child_id, firstname, lastname, age, classroom_id):
+    query = """
+    UPDATE child
+    SET firstname = '%s', lastname = '%s', age = %s, room = %s
+    WHERE id = %s
+    """ % (firstname, lastname, age, classroom_id, child_id)
+    execute_query(connection, query)
+
+def get_children(connection):
+    query = "SELECT * FROM child"
+    return execute_read_query(connection, query)
+
